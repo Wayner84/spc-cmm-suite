@@ -54,6 +54,7 @@ Windows-focused Tkinter desktop application for practical metrology workflows.
   - apply symmetric tolerance (±) for PASS / FAIL classification
   - auto-use detected tolerance columns when present
   - optional FAIL-only filtering for triage
+  - feature-name search filtering for faster review
   - view deviation trend and measured-vs-nominal scatter plot
   - export compare results to CSV
 

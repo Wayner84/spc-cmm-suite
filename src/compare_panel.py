@@ -24,6 +24,7 @@ class ComparePanel(ttk.Frame):
         self.measured_var = tk.StringVar()
         self.feature_var = tk.StringVar()
         self.tol_var = tk.StringVar()
+        self.search_var = tk.StringVar()
         self.status_var = tk.StringVar(value="Load a CSV/XLSX file containing nominal and measured values.")
 
         self.summary_vars = {
@@ -69,12 +70,16 @@ class ComparePanel(ttk.Frame):
 
         ttk.Label(controls, text="Symmetric tolerance (±)").grid(row=6, column=0, sticky="w")
         ttk.Entry(controls, textvariable=self.tol_var, width=14).grid(row=7, column=0, sticky="w", pady=(2, 10))
-        ttk.Checkbutton(controls, text="Show FAIL rows only", variable=self.fail_only_var, command=self._refresh_view).grid(row=8, column=0, sticky="w", pady=(0, 10))
+        ttk.Checkbutton(controls, text="Show FAIL rows only", variable=self.fail_only_var, command=self._refresh_view).grid(row=8, column=0, sticky="w", pady=(0, 6))
+        ttk.Label(controls, text="Feature search contains").grid(row=9, column=0, sticky="w")
+        search_entry = ttk.Entry(controls, textvariable=self.search_var, width=24)
+        search_entry.grid(row=10, column=0, sticky="ew", pady=(2, 10))
+        search_entry.bind("<KeyRelease>", lambda _e: self._refresh_view())
 
-        ttk.Button(controls, text="Analyse compare", command=self._refresh_view).grid(row=9, column=0, sticky="ew")
+        ttk.Button(controls, text="Analyse compare", command=self._refresh_view).grid(row=11, column=0, sticky="ew")
 
         summary = ttk.LabelFrame(controls, text="Summary", padding=10)
-        summary.grid(row=10, column=0, sticky="ew", pady=(12, 0))
+        summary.grid(row=12, column=0, sticky="ew", pady=(12, 0))
         fields = [
             ("Rows", "rows"),
             ("Mean deviation", "mean_dev"),
@@ -157,6 +162,10 @@ class ComparePanel(ttk.Frame):
             self.result_df = build_compare_dataframe(self.df, mapping)
             if self.fail_only_var.get() and "Status" in self.result_df.columns:
                 self.result_df = self.result_df.loc[self.result_df["Status"].eq("FAIL")].copy()
+            feature_col = self.feature_var.get().strip()
+            search_text = self.search_var.get().strip().lower()
+            if feature_col and search_text and feature_col in self.result_df.columns:
+                self.result_df = self.result_df.loc[self.result_df[feature_col].astype(str).str.lower().str.contains(search_text, na=False)].copy()
             if self.shared_state is not None:
                 self.shared_state.compare_results = self.result_df.copy()
                 self.shared_state.compare_source_name = self.file_var.get()
@@ -226,6 +235,11 @@ class ComparePanel(ttk.Frame):
 
         if self.fail_only_var.get() and "Status" in result.columns:
             result = result.loc[result["Status"].eq("FAIL")].copy()
+
+        feature_col = self.feature_var.get().strip()
+        search_text = self.search_var.get().strip().lower()
+        if feature_col and search_text and feature_col in result.columns:
+            result = result.loc[result[feature_col].astype(str).str.lower().str.contains(search_text, na=False)].copy()
 
         self.result_df = result
         if self.shared_state is not None:
